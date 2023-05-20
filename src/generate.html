@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+</head>
+
+<script>
+    function resetError() {
+        document.getElementById("equations_error").innerHTML = ""
+    }
+    function generateEquation() {
+        resetError()
+        document.getElementById("equation").innerHTML = ""
+        try {
+            let n = parseInt(document.getElementById("nr_equations").value, 10)
+            if (isNaN(n)) {
+                document.getElementById("equations_error").innerHTML = "Not a number"
+                return
+            }
+            x = []
+            for (let i = 0; i < n; i++) {
+                x.push(parseInt(Math.random() * 10))
+            }
+            equations = []
+            for (let i = 0; i < n; i++) {
+                equation = []
+
+                for (let j = 0; j < n; j++) {
+                    equation.push(parseInt(Math.random() * 10))
+                }
+
+                equations.push(equation)
+            }
+
+            B = []
+            for (let i = 0; i < n; i++) {
+                sum = 0
+
+                for (let j = 0; j < n; j++) {
+                    sum = sum + (equations[i][j] * x[j])
+                }
+
+                B.push(sum)
+            }
+            console.log(equations, B, x)
+
+            let text = ""
+
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    text += `${equations[i][j]} * x<sub>${j}</sub> +`
+                }
+                text += `= ${B[i]} <br>`
+            }
+            text += `Solution: ${x.join(" ")}`
+
+            text += "<br>"
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    text += `${equations[i][j]} `
+                }
+                text += `${B[i]}<br>`
+            }
+
+            document.getElementById("equation").innerHTML = text
+
+        } catch (e) {
+            console.log(e)
+            let error = document.getElementById("equations_error")
+            error.innerHTML = "There was an error with your request"
+        }
+
+    }
+</script>
+
+<body>
+    <input type="text" id="nr_equations" />
+    <input type="button" id="equations_button" value="Generate equation" onclick="generateEquation()" />
+    <p style="color: red" id="equations_error"></p>
+    <p id="equation"></p>
+
+
+</body>
+
+</html>
