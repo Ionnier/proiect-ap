@@ -1,4 +1,5 @@
 import sys
+import time
 import numpy as np
 from mpi4py import MPI
 
@@ -39,8 +40,26 @@ input_data = None
 A = None
 b = None
 
-if rank == MASTER_PROCESS:
+def getTimeStamp():
+    return int(round(time.time() * 1000))
 
+
+prevTimestamp = None
+
+
+def log(message, force=False):
+    global prevTimestamp
+    if (rank == MASTER_PROCESS or force):
+        currTimestamp = getTimeStamp()
+        fin = ""
+        if (prevTimestamp != None):
+            fin = f"{currTimestamp - prevTimestamp}"
+        print(f"{message} timestamp = {currTimestamp} diff = {fin}")
+        prevTimestamp = currTimestamp
+
+starttimestamp = int(round(time.time() * 1000))
+if rank == MASTER_PROCESS:
+    log(f"Start read from file")
     INPUT_FILE_PATH = sys.argv[1]
     try:
         input_data = np.genfromtxt(INPUT_FILE_PATH)
@@ -90,6 +109,7 @@ if rank == MASTER_PROCESS:
     prev_x = np.ones(local_A[0].shape[0])
     initial_x = prev_x
 
+log(f"Start iterations")
 while CURRENT_ITERATION < MAX_NUM_OF_ITERATIONS:
     if rank != MASTER_PROCESS:
         prev_x, curr_x = comm.recv(source=rank - 1)
@@ -112,6 +132,8 @@ while CURRENT_ITERATION < MAX_NUM_OF_ITERATIONS:
         comm.send((curr_x, [], solution), MASTER_PROCESS)
 
     CURRENT_ITERATION += 1
+log(f"Finish iterations")
 
 if rank == MASTER_PROCESS:
     print('SOLUTION', solution)
+    log(f"Print solution")
