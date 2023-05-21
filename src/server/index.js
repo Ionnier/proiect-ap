@@ -13,6 +13,20 @@ pythonCommand = args[0]
 sourceDirectory = args[1]
 
 const app = express()
+
+var maxProc = 4
+let procCommand = "getconf _NPROCESSORS_ONLN"
+if (process.platform === "win32") {
+    procCommand = "echo %NUMBER_OF_PROCESSORS%"
+}
+
+exec(procCommand, (error, stdout) => {
+    if (!error) {
+        maxProc = stdout
+        console.log(stdout)
+    }
+})
+
 app.use(require("cors")())
 app.use(express.json());
 app.use(express.urlencoded({
@@ -67,7 +81,7 @@ app.post("/run/:method/", (req, res) => {
 })
 
 app.get("/", (req, res) => {
-    res.render("index")
+    res.render("index", { maxProc })
 })
 
 app.listen(process.env.PORT || "3000")

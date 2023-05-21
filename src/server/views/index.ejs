@@ -109,7 +109,7 @@
     <textarea id="inputFile" rows="5" cols="33"> </textarea>
     <p />
     <p id="processorsValue"></p>
-    <input type="range" id="processors" name="volume" min="0" max="8"
+    <input type="range" id="processors" name="volume" min="0" max="<%= `${maxProc}`.trim() %>"
         onchange="document.getElementById('processorsValue').innerHTML=`Processors ${document.getElementById('processors').value}`">
     <p id="iterationsValue"
         onload="document.getElementById('iterationsValue').innerHTML=`Iterations ${document.getElementById('iterations').value}`">
