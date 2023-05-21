@@ -1,5 +1,6 @@
 import copy
 import sys
+import time
 from mpi4py import MPI
 import numpy as np
 
@@ -19,7 +20,28 @@ size = comm.Get_size()
 A = None
 b = None
 
+def getTimeStamp():
+    return int(round(time.time() * 1000))
+
+
+prevTimestamp = None
+
+
+def log(message, force=False):
+    global prevTimestamp
+    if (rank == MASTER or force):
+        currTimestamp = getTimeStamp()
+        fin = ""
+        if (prevTimestamp != None):
+            fin = f"{currTimestamp - prevTimestamp}"
+        print(f"{message} timestamp = {currTimestamp} diff = {fin}")
+        prevTimestamp = currTimestamp
+
+
+starttimestamp = int(round(time.time() * 1000))
+
 if rank == MASTER:
+    log(f"Start read from file")
     data = np.genfromtxt(CALE_FISIER_INPUT)
     A = data.transpose()[:-1].transpose()
     b = data.transpose()[-1]
@@ -57,12 +79,16 @@ if rank == MASTER:
             for i in all_indexes[idx]:
                 data_A.append(A[i])
                 data_b.append(b[i])
+            log(f"Start sending")
             comm.send((data_A, data_b), 1+idx)
 else:
+    log(f"Start receiving")
     local_A, local_b = comm.recv(source=MASTER)
+
 n = len(local_A[0])
 indexes = range((rank*n)//size, ((rank+1) * n)//size)
 x_new = np.zeros(n)
+log(f"Start iterations")
 for _ in range(MAX_ITER):
     # print(x_new)
     x_new_copy = copy.deepcopy(x_new)
@@ -77,11 +103,13 @@ for _ in range(MAX_ITER):
 
         x_new[index] = first * (second - local_b[indexes.index(index)])
 
+    log(f"Start gather")
     x_new2 = comm.allgather((x_new, list(indexes)))
     # print(x_new2)
     for el in x_new2:
         for idx in el[1]:
             x_new[idx] = el[0][idx]
+log(f"Finish iterations")
 if rank == MASTER:
     print(x_new)
 
