@@ -23,6 +23,14 @@ if rank == MASTER:
     data = np.genfromtxt(CALE_FISIER_INPUT)
     A = data.transpose()[:-1].transpose()
     b = data.transpose()[-1]
+    for i in range(len(A)):
+        sum = 0
+        for j in range(len(A[i])):
+            if j != i:
+                sum += abs(A[i][j])
+        if abs(A[i][i]) <= sum:
+            print('Matricea nu este diagonal dominanta!')
+            break
 
 
 local_A = []
