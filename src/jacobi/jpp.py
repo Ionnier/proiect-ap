@@ -20,6 +20,7 @@ size = comm.Get_size()
 A = None
 b = None
 
+
 def getTimeStamp():
     return int(round(time.time() * 1000))
 
@@ -50,7 +51,7 @@ if rank == MASTER:
         for j in range(len(A[i])):
             if j != i:
                 sum += abs(A[i][j])
-        if abs(A[i][i]) <= sum:
+        if abs(A[i][i]) < sum:
             print('Matricea nu este diagonal dominanta!')
             break
 
@@ -103,7 +104,6 @@ for _ in range(MAX_ITER):
 
         x_new[index] = first * (second - local_b[indexes.index(index)])
 
-    log(f"Start gather")
     x_new2 = comm.allgather((x_new, list(indexes)))
     # print(x_new2)
     for el in x_new2:
