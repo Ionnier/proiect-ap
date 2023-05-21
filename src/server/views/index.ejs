@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+</head>
+
+<script>
+    function resetError() {
+        document.getElementById("equations_error").innerHTML = ""
+    }
+    function setError(str) {
+        document.getElementById("equations_error").innerHTML = str
+    }
+    function generateEquation() {
+        resetError()
+        document.getElementById("equation").innerHTML = ""
+        try {
+            let n = parseInt(document.getElementById("nr_equations").value, 10)
+            if (isNaN(n)) {
+                document.getElementById("equations_error").innerHTML = "Not a number"
+                return
+            }
+            x = []
+            for (let i = 0; i < n; i++) {
+                x.push(parseInt(Math.random() * 10))
+            }
+            equations = []
+            for (let i = 0; i < n; i++) {
+                equation = []
+
+                for (let j = 0; j < n; j++) {
+                    equation.push(parseInt(Math.random() * 10))
+                }
+
+                equations.push(equation)
+            }
+
+            B = []
+            for (let i = 0; i < n; i++) {
+                sum = 0
+
+                for (let j = 0; j < n; j++) {
+                    sum = sum + (equations[i][j] * x[j])
+                }
+
+                B.push(sum)
+            }
+            console.log(equations, B, x)
+
+            let text = ""
+
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    text += `${equations[i][j]} * x<sub>${j}</sub> +`
+                }
+                text += `= ${B[i]} <br>`
+            }
+            text += `Solution: ${x.join(" ")}`
+
+            text += "<br>"
+            for (let i = 0; i < n; i++) {
+                for (let j = 0; j < n; j++) {
+                    text += `${equations[i][j]} `
+                }
+                text += `${B[i]}<br>`
+            }
+
+            document.getElementById("equation").innerHTML = text
+
+        } catch (e) {
+            console.log(e)
+            let error = document.getElementById("equations_error")
+            error.innerHTML = "There was an error with your request"
+        }
+
+    }
+    async function sendInput() {
+        const rawResponse = await fetch(`/run/${document.getElementById("chosenMethod").value}/`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ processors: document.getElementById("processors").value, input: document.getElementById("inputFile").value, iterations: document.getElementById("iterations").value })
+        });
+        if (rawResponse.status == 400) {
+            return setError("There was an error with your request")
+        }
+        const content = await rawResponse.json();
+        console.log(content)
+        document.getElementById("output").innerHTML = content.stdout
+    }
+    window.onload = function () {
+        document.getElementById('processorsValue').innerHTML = `Processors ${document.getElementById('processors').value}`
+        document.getElementById('iterationsValue').innerHTML = `Iterations ${document.getElementById('iterations').value}`
+    }
+</script>
+
+<body>
+    <input type="text" id="nr_equations" />
+    <input type="button" id="equations_button" value="Generate equation" onclick="generateEquation()" />
+    <p style="color: red" id="equations_error"></p>
+    <p id="equation"></p>
+
+
+    <br>
+    <h1>Input</h1>
+    <textarea id="inputFile" rows="5" cols="33"> </textarea>
+    <p />
+    <p id="processorsValue"></p>
+    <input type="range" id="processors" name="volume" min="0" max="8"
+        onchange="document.getElementById('processorsValue').innerHTML=`Processors ${document.getElementById('processors').value}`">
+    <p id="iterationsValue"
+        onload="document.getElementById('iterationsValue').innerHTML=`Iterations ${document.getElementById('iterations').value}`">
+    </p>
+    <input type="range" id="iterations" name="volume" min="1" max="1000"
+        onchange="document.getElementById('iterationsValue').innerHTML=`Iterations ${document.getElementById('iterations').value}`">
+    <p />
+    <select id="chosenMethod">
+        <option value="gaussian">Gaussian Elimination</option>
+        <option value="jacobi">Jacobi</option>
+        <option value="seidel">Gauss-Seidel</option>
+    </select>
+    <input type="button" id="inputSend" value="Send" onclick="sendInput()" />
+    <pre id="output"></pre>
+
+</body>
+
+</html>

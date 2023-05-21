@@ -2,8 +2,12 @@ import sys
 import numpy as np
 from mpi4py import MPI
 
+if len(sys.argv) != 3:
+    print('Invalid format!', file=sys.stderr)
+    exit(1)
+
 MASTER_PROCESS = 0
-MAX_NUM_OF_ITERATIONS = 100
+MAX_NUM_OF_ITERATIONS = int(sys.argv[2])
 CURRENT_ITERATION = 0
 TOLERANCE = 1e-8
 
@@ -26,6 +30,7 @@ def compute_x(index, A, b, prev_x, curr_x):
     local_x = first * (second + third - b)
     return local_x
 
+
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 nprocs = comm.Get_size()
@@ -35,10 +40,7 @@ A = None
 b = None
 
 if rank == MASTER_PROCESS:
-    if len(sys.argv) != 2:
-        print('Invalid format!', file=sys.stderr)
-        exit(1)
-    
+
     INPUT_FILE_PATH = sys.argv[1]
     try:
         input_data = np.genfromtxt(INPUT_FILE_PATH)
@@ -68,7 +70,7 @@ if rank == MASTER_PROCESS:
             local_A.append(A[j])
             local_b.append(b[j])
         comm.send((local_A, local_b, SPLIT_FACTOR), i)
-    
+
     # master
     local_A = []
     local_b = []
@@ -98,9 +100,10 @@ while CURRENT_ITERATION < MAX_NUM_OF_ITERATIONS:
             break
 
     for matrix_line in range(len(local_A)):
-        local_x = compute_x(rank * SPLIT_FACTOR + matrix_line, local_A[matrix_line], local_b[matrix_line], prev_x, curr_x)
+        local_x = compute_x(rank * SPLIT_FACTOR + matrix_line,
+                            local_A[matrix_line], local_b[matrix_line], prev_x, curr_x)
         curr_x.append(local_x)
-    
+
     if rank != nprocs - 1:
         comm.send((prev_x, curr_x), rank + 1)
     else:
