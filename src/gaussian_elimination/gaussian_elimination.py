@@ -18,8 +18,28 @@ CALE_FISIER_INPUT = sys.argv[1]
 data = None
 indexes = None
 
+
+def getTimeStamp():
+    return int(round(time.time() * 1000))
+
+
+prevTimestamp = None
+
+
+def log(message, force=False):
+    global prevTimestamp
+    if (rank == MASTER or force):
+        currTimestamp = getTimeStamp()
+        fin = ""
+        if (prevTimestamp != None):
+            fin = f"{currTimestamp - prevTimestamp}"
+        print(f"{message} timestamp = {currTimestamp} diff = {fin}")
+        prevTimestamp = currTimestamp
+
+
 starttimestamp = int(round(time.time() * 1000))
 if rank == MASTER:
+    log(f"Start read from file")
     data = numpy.genfromtxt(CALE_FISIER_INPUT)
     indexes = []
     for i in range(len(data)):
@@ -27,13 +47,15 @@ if rank == MASTER:
             indexes.append((i, j))
     indexes = numpy.array_split(indexes, size)
 
-
+log(f"Start scatter")
 indexes = comm.scatter(indexes, root=MASTER)
+log(f"Start bcast")
 data = comm.bcast(data, MASTER)
 
 A = data
 C = [A]
 
+log(f"Start iterations")
 for i in range(len(A)-1):
     calculatedIndexes = []
     for index in indexes:
@@ -58,6 +80,7 @@ for i in range(len(A)-1):
                 newC[index[0]][index[1]] = value
     newC = comm.bcast(newC, MASTER)
     C.append(newC)
+log(f"Finish iterations")
 
 
 if rank == MASTER:
@@ -66,26 +89,24 @@ if rank == MASTER:
     for i in range(len(A)):
         x.append(f"x{i}")
         knowns.append(None)
-    variables = sympy.symbols(" ".join(x))
-    print(f"Duration: {int(round(time.time() * 1000)) - starttimestamp}")
+    log(f"Start substitution")
     for i in range(len(C)-1, -1, -1):
         for equation in C[i]:
             hey = 0
+            curr_x = -1
+            curr_v = -1
             for s in range(len(equation)-1):
-                if (knowns[s] == None):
-                    hey += variables[s] * equation[s]
+                if (knowns[s] == None and equation[s] != 0):
+                    if (curr_x != -1):
+                        print("Somewhere, something went wrong")
+                        exit(0)
+                    curr_x = s
+                    curr_v = equation[s]
                 else:
-                    hey += knowns[s] * equation[s]
-            equation = sympy.Eq(hey, equation[-1])
-            solutions = sympy.solve(equation, variables)
-            for s in solutions:
-                flag = False
-                for idx in range(len(s)):
-                    variable = s[idx]
-                    if (type(variable) != sympy.core.symbol.Symbol and knowns[idx] == None):
-                        knowns[idx] = variable
-                        flag = True
-                        break
-                if flag:
-                    continue
+                    if (knowns[s] != None):
+                        hey += knowns[s] * equation[s]
+            total_value = equation[-1] - hey
+            knowns[curr_x] = total_value / curr_v
+            break
+    log(f"Finish substitution")
     print(knowns)
