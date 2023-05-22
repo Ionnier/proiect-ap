@@ -90,9 +90,12 @@ n = len(local_A[0])
 indexes = range((rank*n)//size, ((rank+1) * n)//size)
 x_new = np.zeros(n)
 log(f"Start iterations")
+prevXnew2 = []
+shouldShow = True
 for _ in range(MAX_ITER):
     # print(x_new)
     x_new_copy = copy.deepcopy(x_new)
+    prevXnew2 = copy.deepcopy(x_new)
     for index in indexes:
         # print(local_A,local_A[indexes.index(index)], index)
         first = -1 / local_A[indexes.index(index)][index]
@@ -109,6 +112,13 @@ for _ in range(MAX_ITER):
     for el in x_new2:
         for idx in el[1]:
             x_new[idx] = el[0][idx]
+    if shouldShow and (abs(np.sum(prevXnew2) - np.sum(x_new)) < 0.0000000001):
+        shouldShow = False
+        if (rank == MASTER):
+            print(f"Convergenta la {_}")
+        break
+            
+    
 log(f"Finish iterations")
 if rank == MASTER:
     print(x_new)

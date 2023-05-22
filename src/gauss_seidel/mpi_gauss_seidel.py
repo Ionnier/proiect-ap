@@ -110,14 +110,21 @@ if rank == MASTER_PROCESS:
     initial_x = prev_x
 
 log(f"Start iterations")
+prevXnew2 = []
+shouldShow = True
 while CURRENT_ITERATION < MAX_NUM_OF_ITERATIONS:
+    prevXnew2 = solution
     if rank != MASTER_PROCESS:
         prev_x, curr_x = comm.recv(source=rank - 1)
     elif rank == MASTER_PROCESS and CURRENT_ITERATION != 0:
         prev_x, curr_x, solution = comm.recv(source=nprocs - 1)
 
-        if np.linalg.norm(solution - initial_x) < TOLERANCE:
-            break
+        if (shouldShow and abs(np.sum(prevXnew2) - np.sum(solution)) < 0.0000000000001):
+            shouldShow = False
+            print(f"Convergenta la {CURRENT_ITERATION}")
+            print('SOLUTION', solution)
+            log(f"Print solution")
+            comm.Abort()
 
     for matrix_line in range(len(local_A)):
         local_x = compute_x(rank * SPLIT_FACTOR + matrix_line,
